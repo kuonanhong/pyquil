@@ -500,3 +500,60 @@ def test_eq():
 
     assert p1 == p2
     assert not p1 != p2
+
+
+def test_kraus():
+    pq = Program(X(0), X(1))
+    pq.define_noisy_gate("X", (0,), [
+        [[0., 1.],
+         [1.,0.]],
+        [[0., 0.],
+         [0., 0.]]
+    ])
+    pq.define_noisy_gate("X", (1,), [
+        [[0., 1.],
+         [1.,0.]],
+        [[0., 0.],
+         [0., 0.]]
+    ])
+
+    ret = pq.out()
+    assert ret.startswith(
+        'PRAGMA ADD-KRAUS X 0 "(0.0+0.0i 1.0+0.0i 1.0+0.0i 0.0+0.0i)"\n'
+        'PRAGMA ADD-KRAUS X 0 "(0.0+0.0i 0.0+0.0i 0.0+0.0i 0.0+0.0i)"\n'
+        '\n'
+        'PRAGMA ADD-KRAUS X 1 "(0.0+0.0i 1.0+0.0i 1.0+0.0i 0.0+0.0i)"\n'
+        'PRAGMA ADD-KRAUS X 1 "(0.0+0.0i 0.0+0.0i 0.0+0.0i 0.0+0.0i)"\n')
+
+    with pytest.raises(ValueError):
+        pq.define_noisy_gate("X", (0,), [
+            [[0., 1.],
+             [1., 0.]],
+            [[0., 1.],
+             [1., 0.]]
+        ])
+    with pytest.raises(ValueError):
+        pq.define_noisy_gate("X", (0,), [
+            [[0., 1., 0.],
+             [1., 0., 0.]],
+            [[0., 1.],
+             [1., 0.]]
+        ])
+
+
+    pq1 = Program(X(0))
+    pq1.define_noisy_gate("X", (0,), [
+        [[0., 1.],
+         [1.,0.]],
+        [[0., 0.],
+         [0., 0.]]
+    ])
+    pq2 = Program(X(1))
+    pq2.define_noisy_gate("X", (1,), [
+        [[0., 1.],
+         [1.,0.]],
+        [[0., 0.],
+         [0., 0.]]
+    ])
+
+    assert pq1+pq2 == pq

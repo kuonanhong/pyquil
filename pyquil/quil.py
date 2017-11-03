@@ -16,8 +16,12 @@
 """
 Module for creating and defining Quil programs.
 """
+from math import pi
+
 from six import integer_types
 
+from pyquil.kraus import _check_kraus_op_dims, _create_kraus_pragma
+from .gates import MEASURE, STANDARD_GATES
 from .quilbase import (InstructionGroup,
                        Instr,
                        Addr,
@@ -26,12 +30,9 @@ from .quilbase import (InstructionGroup,
                        DefGate,
                        Gate,
                        Measurement,
-                       issubinstance,
                        AbstractQubit,
                        merge_resource_managers)
-
-from .gates import MEASURE, STANDARD_GATES
-from math import pi
+import numpy as np
 
 
 class Program(InstructionGroup):
@@ -39,6 +40,7 @@ class Program(InstructionGroup):
         super(Program, self).__init__()
         self.inst(*instructions)
         self.defined_gates = []
+        self.noisy_gate_definitions = {}
 
     def synthesize(self, resource_manager=None):
         self.resource_manager.reset()
@@ -55,6 +57,8 @@ class Program(InstructionGroup):
         if isinstance(other, Program):
             p = Program()
             p.defined_gates = self.defined_gates + other.defined_gates
+            p.noisy_gate_definitions = self.noisy_gate_definitions.copy()
+            p.noisy_gate_definitions.update(other.noisy_gate_definitions)
             p.actions = self.actions + other.actions
             p.resource_manager = merge_resource_managers(self.resource_manager,
                                                          other.resource_manager)
@@ -129,6 +133,20 @@ class Program(InstructionGroup):
         """
         self.defined_gates.append(DefGate(name, matrix))
         return self
+
+    def define_noisy_gate(self, name, qubit_indices, kraus_ops):
+        """
+        Overload a static ideal gate with a noisy one defined in terms of a Kraus map.
+
+        :param str name: The name of the gate.
+        :param tuple|list qubit_indices: The qubits it acts on.
+        :param tuple|list kraus_ops: The Kraus operators.
+        :return: The Program instance
+        :rtype: Program
+        """
+        kraus_ops = [np.asarray(k, dtype=np.complex128) for k in kraus_ops]
+        _check_kraus_op_dims(len(qubit_indices), kraus_ops)
+        self.noisy_gate_definitions[(name, tuple(qubit_indices))] = kraus_ops
 
     def measure(self, qubit_index, classical_reg):
         """
@@ -246,6 +264,10 @@ class Program(InstructionGroup):
         s = ""
         for dg in self.defined_gates:
             s += dg.out()
+            s += "\n"
+        for (name, qubits), kraus_ops in sorted(self.noisy_gate_definitions.items(),
+                                                key=lambda x: (x[0][0], len(x[0][1]), x[0][1])):
+            s += _create_kraus_pragma(name, qubits, kraus_ops)
             s += "\n"
         s += super(Program, self).out()
         return s
