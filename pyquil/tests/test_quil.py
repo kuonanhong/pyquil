@@ -506,13 +506,14 @@ def test_kraus():
     pq = Program(X(0), X(1))
     pq.define_noisy_gate("X", (0,), [
         [[0., 1.],
-         [1.,0.]],
+         [1., 0.]],
         [[0., 0.],
          [0., 0.]]
     ])
+
     pq.define_noisy_gate("X", (1,), [
         [[0., 1.],
-         [1.,0.]],
+         [1., 0.]],
         [[0., 0.],
          [0., 0.]]
     ])
@@ -532,6 +533,7 @@ def test_kraus():
             [[0., 1.],
              [1., 0.]]
         ])
+
     with pytest.raises(ValueError):
         pq.define_noisy_gate("X", (0,), [
             [[0., 1., 0.],
@@ -540,20 +542,19 @@ def test_kraus():
              [1., 0.]]
         ])
 
-
     pq1 = Program(X(0))
     pq1.define_noisy_gate("X", (0,), [
         [[0., 1.],
-         [1.,0.]],
+         [1., 0.]],
         [[0., 0.],
          [0., 0.]]
     ])
     pq2 = Program(X(1))
     pq2.define_noisy_gate("X", (1,), [
         [[0., 1.],
-         [1.,0.]],
+         [1., 0.]],
         [[0., 0.],
          [0., 0.]]
     ])
 
-    assert pq1+pq2 == pq
+    assert pq1 + pq2 == pq

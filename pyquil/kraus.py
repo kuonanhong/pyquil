@@ -29,9 +29,9 @@ def _check_kraus_op_dims(n, kraus_ops):
     :param list|tuple kraus_ops: The Kraus operators as numpy.ndarrays.
     """
     for k in kraus_ops:
-        if not np.shape(k) == (2**n, 2**n):
+        if not np.shape(k) == (2 ** n, 2 ** n):
             raise ValueError(
-                "Kraus operators for {0} qubits must have shape {1}x{1}: {2}".format(n, 2**n, k))
+                "Kraus operators for {0} qubits must have shape {1}x{1}: {2}".format(n, 2 ** n, k))
 
     kdk_sum = sum(np.transpose(k).conjugate().dot(k) for k in kraus_ops)
     if not np.allclose(kdk_sum, np.eye(2**n), atol=1e-5):
